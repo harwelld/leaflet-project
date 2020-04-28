@@ -1,0 +1,110 @@
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Access premium ArcGIS Online content</title>
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+
+  <!-- Load Leaflet from CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+  integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+  crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+  integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+  crossorigin=""></script>
+
+
+  <!-- Load Esri Leaflet from CDN -->
+  <script src="https://unpkg.com/esri-leaflet@2.3.3/dist/esri-leaflet.js"
+  integrity="sha512-cMQ5e58BDuu1pr9BQ/eGRn6HaR6Olh0ofcHFWe5XesdCITVuSBiBZZbhCijBe5ya238f/zMMRYIMIIg1jxv4sQ=="
+  crossorigin=""></script>
+
+
+
+
+  <style>
+    body { margin:0; padding:0; }
+    #map { position: absolute; top:0; bottom:0; right:0; left:0; }
+  </style>
+</head>
+<body>
+
+<style>
+  #auth {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 1em;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+    border-radius: 4px;
+  }
+
+  #auth input {
+    display: inline-block;
+    border: 1px solid #999;
+    font-size: 14px;
+    border-radius: 4px;
+    height: 28px;
+    line-height: 28px;
+  }
+</style>
+
+<div id="map"></div>
+<div id="auth">
+  <a href="#" id="sign-in">Add Traffic Layer</a>
+</div>
+
+<script>
+  var clientID = 'uoiMRafhECiH5uNE';
+  var accessToken;
+  var callbacks = [];
+  var protocol = window.location.protocol;
+  var callbackPage = protocol + '//esri.github.io/esri-leaflet/examples/oauth/callback.html';
+
+  var signInButton = document.getElementById('sign-in');
+
+  var trafficLayer;
+
+  var map = L.map('map').setView([34.045, -118.195], 13);
+
+  L.esri.basemapLayer('Streets').addTo(map);
+  L.esri.featureLayer({
+      url: "https://services.arcgis.com/HRPe58bUyBqyyiCt/arcgis/rest/services/StormLines/FeatureServer/0"}).addTo(map);
+
+  // this function will be called when the oauth process is complete
+  window.oauthCallback = function (token) {
+    accessToken = token;
+    for (var i = 0; i < callbacks.length; i++) {
+      callbacks[i](token);
+    }
+    callbacks = [];
+  };
+  // this function will open a window and start the oauth process
+  function oauth (callback) {
+    if (accessToken) {
+      callback(accessToken);
+    } else {
+      callbacks.push(callback);
+      window.open('https://www.arcgis.com/sharing/oauth2/authorize?client_id=' + clientID + '&response_type=token&expiration=20160&redirect_uri=' + window.encodeURIComponent(callbackPage), 'oauth-window', 'height=400,width=600,menubar=no,location=yes,resizable=yes,scrollbars=yes,status=yes');
+    }
+  }
+
+  signInButton.addEventListener('click', function (e) {
+    oauth(function (token) {
+      trafficLayer = L.esri.dynamicMapLayer({
+        url: 'https://traffic.arcgis.com/arcgis/rest/services/World/Traffic/MapServer',
+        token: token
+      }).addTo(map);
+      trafficLayer.on('authenticationrequired', function (e) {
+        oauth(function (token) {
+          e.authenticate(token);
+        });
+      });
+    });
+    e.preventDefault();
+  });
+</script>
+
+</body>
+</html>

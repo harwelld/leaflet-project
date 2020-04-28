@@ -1,0 +1,95 @@
+/* Stylesheet - leaflet-lab - Dylan Harwell */
+
+body {
+    padding: 0;
+    margin: 0;
+    font-family: Verdana, Arial, sans-serif;
+}
+
+html, body, #map {
+    height: 100%;
+    width: 100%;
+}
+
+#basemap-selector {
+    top: -62px;
+    left: 40px;
+    padding: 3px;
+}
+
+.leaflet-popup-content p {
+    margin: 0.2em 0;
+}
+
+.leaflet-control-zoom-in:hover, .leaflet-control-zoom-out:hover {
+    background-color: #ccc !important;
+}
+
+
+#street-view {
+    width: 26px;
+    height: 26px;
+    top: -30px;
+    padding: 2px !important;
+    background-color: #fff;
+}
+
+.button-image {
+    max-height: 30px;
+    max-width: 30px;
+}
+
+.slider {
+    -webkit-appearance: none;
+    vertical-align: middle;
+    height: 15px;
+    border-radius: 5px;
+    background: #d3d3d3;
+    outline: none;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: black;
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.legend-control-container {
+    box-shadow: 10%;
+    border-radius: 4px;
+    background-color: rgba(255,255,255,0.8);
+    text-align: center;
+}
+
+.leaflet-control-accordionlegend-button {
+    display: block !important;
+}
+
+.accordionlegend-section {
+    padding-top: 0.2em;
+    
+    margin-right: 1em;
+    margin-left: 2.3em !important
+}
+
+.accordionlegend-section-title {
+    display: block !important;
+    text-align: justify !important;
+}
+
+.accordionlegend-swatch-line {
+    margin-top: 0.3em !important;
+}
