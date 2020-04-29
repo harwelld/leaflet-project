@@ -7,6 +7,7 @@ function createMap() {
         editable: true,
         doubleClickZoom: false
     }).setView([39.0665, -108.560], 15);
+    L.control.scale({ metric: false, position: 'bottomright' }).addTo(map);
     
     // Custom attribution to map credits section
     map.attributionControl.addAttribution('<a href="https://esri.github.io/esri-leaflet/" target="_blank">Esri Leaflet</a>');
@@ -22,7 +23,6 @@ function createMap() {
     
     // Add initial vector basemap, set dropdown value, create listener and change function
     var layer = L.esri.Vector.basemap('Navigation').addTo(map);
-    L.control.scale({ metric: false, position: 'bottomright' }).addTo(map);
     $('#basemap-selector').val('Navigation');
     $('#basemap-selector').on('change', function(e) {
         var basemap = e.target.value;
@@ -35,6 +35,39 @@ function createMap() {
         }
         layer = L.esri.Vector.basemap(basemap).addTo(map);
     }
+    
+    // Add generic edit control
+    L.EditControl = L.Control.extend({
+        options: {
+            position: 'bottomleft',
+            callback: null,
+            kind: '',
+            html: ''
+        },
+        onAdd: function(map) {
+            var container = L.DomUtil.create('div', 'leaflet-control leaflet-bar');
+            var link = L.DomUtil.create('a', '', container);
+            link.href = '#';
+            link.title = 'Create a new ' + this.options.kind;
+            link.innerHTML = this.options.html;
+            L.DomEvent
+                .on(link, 'click', L.DomEvent.stop)
+                .on(link, 'click', function() {
+                    window.LAYER = this.options.callback.call(map.editTools);
+                }, this);
+            return container;
+        }
+    });
+    
+    L.NewPointControl = L.EditControl.extend({
+        options: {
+            position: 'bottomleft',
+            callback: map.editTools.startPoint,
+            kind: 'point',
+            html: '▰'
+        }
+    });
+    map.addControl(new L.NewPointControl());
     
     // Initialize map layers from hosted feature layers
     // Probably much better way to handle symbology on pipe inspections, but hey its like using ArcMap definition queries
@@ -62,20 +95,46 @@ function createMap() {
         url: "https://services.arcgis.com/HRPe58bUyBqyyiCt/arcgis/rest/services/StormStructures/FeatureServer/0",
         pointToLayer: function(geojson, latlng) {
             return L.marker(latlng, { icon: structureIcons(geojson) });
-        }
+        },
+/*        onEachFeature: function(feature, layer) {
+            var marker = layer.bindPopup(redlinePopup());
+            marker.on('click', function(e) {
+                var layer = this.feature;
+                var featureID = layer.properties.OBJECTID_1
+                //console.log(properties);
+                var buttonSubmit = L.DomUtil.get('button-submit');
+                var inputDate = L.DomUtil.get('input-date');
+                var inputComment = L.DomUtil.get('input-comment');
+                L.DomEvent.addListener(buttonSubmit, 'click', function(e) {
+                    layer.properties.SNG_DEPTH = inputDate.value;
+                    structures.updateFeature({
+                        type: 'Feature',
+                        id: featureID,
+                        geometry: layer.geometry,
+                        properties: layer.properties
+                    }, function (error, response) {
+                        if (error) {
+                            console.error(error);
+                        }
+                    });
+                    console.log(inputDate.value);
+                    
+                    marker.closePopup();
+                });
+            })
+        }*/
     });
-    
+
     // Bind popups to pipes and structures layers
     pipes.bindPopup(function(layer) {
-        console.log(layer.feature.properties);
         insDate = new Date(layer.feature.properties.InsDate);
         insDate = insDate.toLocaleDateString('en-US');
         return L.Util.template(pipePopup(insDate), layer.feature.properties);
     });
     structures.bindPopup(function(layer) {
         return L.Util.template(strucPopup(), layer.feature.properties);
-    }); 
-
+    });
+    
     // Initialize accordion legend
     var legend = new L.Control.AccordionLegend({
         position: 'topright',
@@ -213,24 +272,35 @@ function structureIcons(feature) {
 
 // Format structure popup information
 function strucPopup() {
-    return '<h5>{SNG_TYPE_C}</h5>' +
-           '<p>Structure ID: {SNG_ST_NO}<br />' +
-           'Cover: {SNG_COVR_C}<br />' +
-           'Rim Elevation (ft): {SNG_RIM_EL}<br />' +
-           'Depth (ft): {SNG_DEPTH}</p>';
+    return '<h5>{SNG_TYPE_C}</h5>\
+            <p>Structure ID: {SNG_ST_NO}<br />\
+            Cover: {SNG_COVR_C}<br />\
+            Rim Elevation (ft): {SNG_RIM_EL}<br />\
+            Depth (ft): {SNG_DEPTH}</p>';
 }
 
 // Format pipe popup information
 function pipePopup(insDate) {
-    return '<h5>{CNG_TYPE_C}</h5>' +
-           '<p>Pipe ID: {CNG_NUMBER}<br />' +
-           'US Structure ID: {CNG_US_STR}<br />' +
-           'DS Structure ID: {CNG_DS_STR}<br />' +
-           'Material: {CNG_MATR_C}<br />' +
-           'Diameter (ft): {CNG_DIA}<br />' +
-           'Length (ft): {CNG_LENGTH}<br />' +
-           'Owner: {CNG_OWN_CD}<br />' +
-           'Inspection Date: ' + insDate + '</p>';
+    return '<h5>{CNG_TYPE_C}</h5>\
+            <p>Pipe ID: {CNG_NUMBER}<br />\
+            US Structure ID: {CNG_US_STR}<br />\
+            DS Structure ID: {CNG_DS_STR}<br />\
+            Material: {CNG_MATR_C}<br />\
+            Diameter (ft): {CNG_DIA}<br />\
+            Length (ft): {CNG_LENGTH}<br />\
+            Owner: {CNG_OWN_CD}<br />\
+            Inspection Date: ' + insDate + '</p>';
+}
+
+// Format redline popup form
+function redlinePopup() {
+    return '<form id="popup-form">\
+                <label for="input-date">Date:</label><br \>\
+                <input id="input-date" type="text" /><br \>\
+                <label for="input-comment">Comments:</label><br \>\
+                <input id="input-comment" type="text" /><br \><br \>\
+                <button id="button-submit" type="button">Submit</button>\
+            </form>';
 }
 
 // Html element to custom Leaflet control
