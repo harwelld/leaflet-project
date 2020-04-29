@@ -194,15 +194,15 @@ function pipeInspection1MonthSymbology(feature) {
 function structureIcons(feature) {
     var icon;
     var drainIcon = L.icon({
-        iconUrl: '/img/drain.png',
+        iconUrl: './img/drain.png',
         iconSize: [18, 18]
     });
     var mhIcon = L.icon({
-        iconUrl: '/img/manhole.png',
+        iconUrl: './img/manhole.png',
         iconSize: [18, 18]
     });
     var disIcon = L.icon({
-        iconUrl: '/img/discharge.png',
+        iconUrl: './img/discharge.png',
         iconSize: [18, 18]
     });
     if (feature.properties.SNG_TYPE_C == 'Storm Manhole') icon = mhIcon;
