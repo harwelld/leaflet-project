@@ -318,3 +318,7 @@ function legendContent(pipes, structures, over3Years, under3Years, under1Year, u
 
 $(document).tooltip();
 $(document).ready(createMap);
+
+if ($(window).width() < 799) {
+    $(document).tooltip('disable');
+}
