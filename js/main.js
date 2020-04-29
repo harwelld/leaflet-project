@@ -316,9 +316,9 @@ function legendContent(pipes, structures, over3Years, under3Years, under1Year, u
     return content;
 }
 
-$(document).tooltip();
 $(document).ready(createMap);
 
-if ($(window).width() < 799) {
-    $(document).tooltip('disable');
+//Does not seem to work, media query not working either. jQuery UI is CRAP
+if ($(window).width() > 799) {
+    $(document).tooltip();
 }
