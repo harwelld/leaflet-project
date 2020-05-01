@@ -12,8 +12,8 @@ html, body, #map {
 }
 
 #basemap-selector {
-    top: -62px;
-    left: 40px;
+    top: -125px;
+    left: 35px;
     padding: 3px;
 }
 
@@ -25,11 +25,18 @@ html, body, #map {
     background-color: #ccc !important;
 }
 
+.leaflet-draw-draw-polyline:hover, .leaflet-draw-draw-circlemarker:hover, .leaflet-draw-draw-marker:hover, .leaflet-draw-edit-remove:hover {
+    background-color: #ccc !important;
+}
+
+.edit-control:hover {
+    background-color: #ccc !important;
+}
 
 #street-view {
     width: 26px;
     height: 26px;
-    top: -30px;
+    top: -33px;
     padding: 2px !important;
     background-color: #fff;
 }
@@ -67,13 +74,6 @@ html, body, #map {
     cursor: pointer;
 }
 
-.legend-control-container {
-    box-shadow: 10%;
-    border-radius: 4px;
-    background-color: rgba(255,255,255,0.8);
-    text-align: center;
-}
-
 .leaflet-control-accordionlegend-button {
     display: block !important;
 }
@@ -92,4 +92,21 @@ html, body, #map {
 
 .accordionlegend-swatch-line {
     margin-top: 0.3em !important;
+}
+
+.accordionlegend-swatch-inline {
+    height: 10px !important;
+    width: 10px !important;
+    margin-left: 0.6em !important;
+}
+
+.accordionlegend-swatch-circle {
+    height: 5px !important;
+    width: 5px !important;
+    margin-left: 0.7em !important;
+    margin-top: 0.2em !important;
+}
+
+.accordionlegend-swatch-label {
+    padding-left: 10px;
 }

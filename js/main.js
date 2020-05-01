@@ -1,34 +1,35 @@
 /* Scripts - GEOG 575 - project - Dylan Harwell */
 
+// Global vars to track different tool states
+var streetViewActive = false;
+var currentlyEditing;
+var currentlyDeleting = false;
+var disableEditing = false;
+
 // Create Leaflet map with ESRI vector tile basemap and basemap selector
 function createMap() {
-    
     var map = L.map('map', {
         editable: true,
         doubleClickZoom: false
     }).setView([39.0665, -108.560], 15);
     L.control.scale({ metric: false, position: 'bottomright' }).addTo(map);
     
+    // Capitalize zoom tooltips, come on leaflet
+    $('.leaflet-control-zoom-in').prop('title', 'Zoom In');
+    $('.leaflet-control-zoom-out').prop('title', 'Zoom Out');
+    
     // Custom attribution to map credits section
     map.attributionControl.addAttribution('<a href="https://esri.github.io/esri-leaflet/" target="_blank">Esri Leaflet</a>');
     map.attributionControl.addAttribution('<a href="https://www.w3schools.com/w3css/default.asp" target="_blank">W3 CSS</a>');
     map.attributionControl.addAttribution('Dylan Harwell - UW Madison');
     
-    // Trigger Google Street View function if map cursor is crosshair
-    map.on('click', function(e) {
-        if ($('#map').css('cursor') == 'crosshair') {
-            googleStreet(e);
-        }
-    });
-    
-    // Add initial vector basemap, set dropdown value, create listener and change function
+    // Add basemap, set dropdown value, create listener and change function
     var layer = L.esri.Vector.basemap('Navigation').addTo(map);
     $('#basemap-selector').val('Navigation');
     $('#basemap-selector').on('change', function(e) {
         var basemap = e.target.value;
         setBasemap(basemap);
-    });
-        
+    }); 
     function setBasemap(basemap) {
         if (layer) {
             map.removeLayer(layer);
@@ -36,98 +37,117 @@ function createMap() {
         layer = L.esri.Vector.basemap(basemap).addTo(map);
     }
     
-    // Add generic edit control
-    L.EditControl = L.Control.extend({
-        options: {
-            position: 'bottomleft',
-            callback: null,
-            kind: '',
-            html: ''
-        },
-        onAdd: function(map) {
-            var container = L.DomUtil.create('div', 'leaflet-control leaflet-bar');
-            var link = L.DomUtil.create('a', '', container);
-            link.href = '#';
-            link.title = 'Create a new ' + this.options.kind;
-            link.innerHTML = this.options.html;
-            L.DomEvent
-                .on(link, 'click', L.DomEvent.stop)
-                .on(link, 'click', function() {
-                    window.LAYER = this.options.callback.call(map.editTools);
-                }, this);
-            return container;
-        }
+    // Map click listener if Google Street View tool is active
+    map.on('click', function(e) {
+        if (streetViewActive) { googleStreet(e); }
     });
     
-    L.NewPointControl = L.EditControl.extend({
-        options: {
-            position: 'bottomleft',
-            callback: map.editTools.startPoint,
-            kind: 'point',
-            html: '▰'
-        }
+    // Circlemarker is actually a polygon, default marker icon is dumb
+    var redlinePointIcon = new L.icon({
+        iconUrl: './img/redCircle.png',
+        iconSize: [16, 16]
     });
-    map.addControl(new L.NewPointControl());
-    
+
     // Initialize map layers from hosted feature layers
     // Probably much better way to handle symbology on pipe inspections, but hey its like using ArcMap definition queries
     var pipes = L.esri.featureLayer({
         url: "https://services.arcgis.com/HRPe58bUyBqyyiCt/arcgis/rest/services/StormLines/FeatureServer/0",
         style: pipeSymbology
     }).addTo(map);
+    
     var over3Years = L.esri.featureLayer({
         url: "https://services.arcgis.com/HRPe58bUyBqyyiCt/arcgis/rest/services/StormLines/FeatureServer/0",
         style: pipeInspectionOver3YearsSymbology
     });
+    
     var under3Years = L.esri.featureLayer({
         url: "https://services.arcgis.com/HRPe58bUyBqyyiCt/arcgis/rest/services/StormLines/FeatureServer/0",
         style: pipeInspectionUnder3YearsSymbology
     });
+    
     var under1Year = L.esri.featureLayer({
         url: "https://services.arcgis.com/HRPe58bUyBqyyiCt/arcgis/rest/services/StormLines/FeatureServer/0",
         style: pipeInspectionUnder1YearSymbology
     });
+    
     var under1Month = L.esri.featureLayer({
         url: "https://services.arcgis.com/HRPe58bUyBqyyiCt/arcgis/rest/services/StormLines/FeatureServer/0",
         style: pipeInspection1MonthSymbology
     });
+    
     var structures = L.esri.featureLayer({
         url: "https://services.arcgis.com/HRPe58bUyBqyyiCt/arcgis/rest/services/StormStructures/FeatureServer/0",
         pointToLayer: function(geojson, latlng) {
             return L.marker(latlng, { icon: structureIcons(geojson) });
-        },
-/*        onEachFeature: function(feature, layer) {
-            var marker = layer.bindPopup(redlinePopup());
-            marker.on('click', function(e) {
-                var layer = this.feature;
-                var featureID = layer.properties.OBJECTID_1
-                //console.log(properties);
-                var buttonSubmit = L.DomUtil.get('button-submit');
-                var inputDate = L.DomUtil.get('input-date');
-                var inputComment = L.DomUtil.get('input-comment');
-                L.DomEvent.addListener(buttonSubmit, 'click', function(e) {
-                    layer.properties.SNG_DEPTH = inputDate.value;
-                    structures.updateFeature({
-                        type: 'Feature',
-                        id: featureID,
-                        geometry: layer.geometry,
-                        properties: layer.properties
-                    }, function (error, response) {
-                        if (error) {
-                            console.error(error);
-                        }
-                    });
-                    console.log(inputDate.value);
-                    
-                    marker.closePopup();
-                });
-            })
-        }*/
+        }
     });
-
+    
+    // Redline layers with special edit functionality
+    var redlinePoint = L.esri.featureLayer({
+        url: "https://services.arcgis.com/HRPe58bUyBqyyiCt/arcgis/rest/services/RedlinePoint/FeatureServer/0",
+        pointToLayer: function(geojson, latlng) {
+            return L.marker(latlng, {icon: redlinePointIcon});
+        },
+        onEachFeature: function(feature, layer) {
+            attributeEditPopup(feature, layer, redlinePoint, map);
+        }
+    });
+    
+    var redlineLine = L.esri.featureLayer({
+        url: "https://services.arcgis.com/HRPe58bUyBqyyiCt/arcgis/rest/services/RedlineLine/FeatureServer/0",
+        color: '#f50505',
+        onEachFeature: function(feature, layer) {
+            attributeEditPopup(feature, layer, redlineLine);
+        }
+    });
+    
+    // Set up Leaflet.Draw editable group and draw toolbar
+    var editLayers = L.featureGroup();
+    map.addLayer(editLayers);
+    var drawControl = new L.Control.Draw({
+        edit: {
+            featureGroup: editLayers, // allow editing/deleting of features in this group
+            edit: false, // disable the edit tool (since we are doing editing ourselves)
+            remove: false
+        },
+        draw: {
+            featureGroup: editLayers,
+            circlemarker: false,
+            polygon: false,
+            circle: false,
+            rectangle: false,
+            polyline: {shapeOptions: {color: '#f50505', opacity: 1, weight: 3}},
+            marker: { icon: new L.icon({
+                iconUrl: './img/redCircle.png',
+                iconSize: [16, 16]
+            })}
+        }
+    });
+    map.addControl(drawControl);
+    
+    // When the map is clicked, stop editing
+    map.on('click', function (e) {
+        stopEditing();
+    });
+    
+    // Set draw listener on map
+    map.on(L.Draw.Event.CREATED, function(e) {
+        var type = e.layerType;
+        var layer = e.layer;
+        console.log(layer);
+        if (type === 'marker') {
+            postNewFeature(layer, redlinePoint);
+        } else if (type === 'polyline') {
+            postNewFeature(layer, redlineLine);
+        }
+        map.addLayer(layer);
+        layer.openPopup();
+    });
+    
+    
     // Bind popups to pipes and structures layers
     pipes.bindPopup(function(layer) {
-        insDate = new Date(layer.feature.properties.InsDate);
+        var insDate = new Date(layer.feature.properties.InsDate);
         insDate = insDate.toLocaleDateString('en-US');
         return L.Util.template(pipePopup(insDate), layer.feature.properties);
     });
@@ -135,50 +155,106 @@ function createMap() {
         return L.Util.template(strucPopup(), layer.feature.properties);
     });
     
-    // Initialize accordion legend
+    // Initialize and customize accordion legend control
     var legend = new L.Control.AccordionLegend({
         position: 'topright',
-        content: legendContent(pipes, structures, over3Years, under3Years, under1Year, under1Month),
+        content: legendContent(pipes, structures, over3Years, under3Years, under1Year, under1Month, redlinePoint, redlineLine),
     }).addTo(map);
     legend.toggleLayer('Pipes', 'on');
+    legend.toggleLayer('Point', 'on');
+    legend.toggleLayer('Line', 'on');
     
-    // Tinker with classes for my use case (could have modified source, but hey jQuery)
+    // Tinker with accordion legend classes for my use case (could have modified source, but hey jQuery)
     $('.leaflet-control-accordionlegend-button').prop('title', 'Toggle Layers and View Legend')
     $('.leaflet-control-accordionlegend-button').addClass('w3-button');
     $('.accordionlegend-section-title').addClass('w3-button w3-round');
     $('.accordionlegend-slider').hide();
-    for (var i=2; i < 6; i++) {
+    $('.accordionlegend-section').children().eq(1).children().eq(1).css('margin-bottom', '0em');
+    for (var i=2; i < 8; i++) {
         $('.accordionlegend-section').children().eq(i).children().eq(1).remove();
-        if (i==5) {
-            $('.accordionlegend-section').children().eq(i).css('padding-bottom', '0.7em');
-        }
+        if (i==7) { $('.accordionlegend-section').children().eq(i).css('padding-bottom', '0.7em'); }
     }
-    
-    $('.leaflet-control-zoom-in').prop('title', 'Zoom In');
-    $('.leaflet-control-zoom-out').prop('title', 'Zoom Out');
-    
+
     // Turn custom controls into Leaflet controls
-    //htmlControlToLeafletControl(map, 'bottomleft', 'slider-wrapper');
     htmlControlToLeafletControl(map, 'topleft', 'basemap-selector');
     htmlControlToLeafletControl(map, 'topleft', 'street-view');
+
+    // Edit state functions
+    function startEditing(layer) {
+        document.getElementById('PEDDISTRIC').value = layer.feature.properties.PEDDISTRIC;
+        // read only
+        document.getElementById('TRANPLANID').value = layer.feature.properties.TRANPLANID;
+        if (!disableEditing) {
+          layer.editing.enable();
+          currentlyEditing = layer;
+        }
+    }
+
+    function stopEditing() {
+        if (currentlyEditing) {
+            handleEdit(currentlyEditing);
+            currentlyEditing.editing.disable();
+        }
+        currentlyEditing = undefined;
+    }
+    
 }
 // End of createMap()
+
+// Post new point or line feature to feature services
+function postNewFeature(layer, redlineLayer) {
+    redlineLayer.addFeature(layer.toGeoJSON());
+}
+
+// Custom popup form edit handler for attribute display and post back to feature service
+function attributeEditPopup(feature, layer, redlineLayer) {
+    var marker = layer.bindPopup(function(layer) {
+        return L.Util.template(redlinePopupTemplate, layer.feature.properties);
+    });
+    marker.on('click', function(e) {
+        var layer = this.feature;
+        var featureID = layer.properties.OBJECTID;
+        var inputName = L.DomUtil.get('input-name');
+        var inputDate = L.DomUtil.get('input-date');
+        var inputComment = L.DomUtil.get('input-comment');
+        var buttonSubmit = L.DomUtil.get('button-submit');
+        L.DomEvent.addListener(buttonSubmit, 'click', function(e) {
+            layer.properties.name = inputName.value;
+            layer.properties.date = inputDate.value;
+            layer.properties.comments = inputComment.value;
+            redlineLayer.updateFeature({
+                type: 'Feature',
+                id: featureID,
+                geometry: layer.geometry,
+                properties: layer.properties
+            }, function (error, response) {
+                if (error) {
+                    console.error(error);
+                }
+            });
+            marker.closePopup();
+        });
+    });
+}
 
 // Set up cursor toggle and Google Street View tool
 var map = $('#map');
 $('#street-view').on('click', function() {
     if (map.css('cursor') == 'crosshair') {
         map.css('cursor', 'pointer');
+        streetViewActive = false;
     } else {
         map.css('cursor', 'crosshair');
+        streetViewActive = true;
     }
 });
 
 function googleStreet(e) {
-    console.log("Lat, Lon : " + e.latlng.lat + ", " + e.latlng.lng);
-    var url = "https://maps.google.com/maps?q=&layer=c&cbll=" + e.latlng.lat + "," + e.latlng.lng
+    console.log('Lat, Lon : ' + e.latlng.lat + ', ' + e.latlng.lng);
+    var url = 'https://maps.google.com/maps?q=&layer=c&cbll=' + e.latlng.lat + ',' + e.latlng.lng
     window.open(url);
     map.css('cursor', 'pointer');
+    streetViewActive = false;
 }
 
 // Main pipe symbology - unique categories
@@ -303,6 +379,16 @@ function redlinePopup() {
             </form>';
 }
 
+redlinePopupTemplate = '<form id="popup-form">\
+                        <label for="input-name">Name:</label><br \>\
+                        <input id="input-name" type="text" value="{name}"/><br \>\
+                        <label for="input-date">Date:</label><br \>\
+                        <input id="input-date" type="text" value="{date}"/><br \>\
+                        <label for="input-comment">Comments:</label><br \>\
+                        <input id="input-comment" type="text" value="{comments}"/><br \><br \>\
+                        <button id="button-submit" type="button">Submit</button>\
+                        </form>'
+
 // Html element to custom Leaflet control
 function htmlControlToLeafletControl(map, position, element) {
     var NewControl = L.Control.extend({
@@ -317,13 +403,21 @@ function htmlControlToLeafletControl(map, position, element) {
     map.addControl(new NewControl());
 }
 
+// Change cursor to pointer over custom controls for consistency
+$('#basemap-selector').hover(function() {
+    $(this).css('cursor', 'pointer');
+});
+$('#street-view').hover(function() {
+    $(this).css('cursor', 'pointer');
+});
+
 // Disable pan/zoom interactions on custom controls
 $('.custom-control, .legend-control-container').on('mousedown dblclick click', function(e) {
    L.DomEvent.stopPropagation(e); 
 });
 
 // Build legend object here to keep it out of createMap
-function legendContent(pipes, structures, over3Years, under3Years, under1Year, under1Month) {
+function legendContent(pipes, structures, over3Years, under3Years, under1Year, under1Month, redlinePoint, redlineLine) {
     var content = 
     [
         {
@@ -381,14 +475,28 @@ function legendContent(pipes, structures, over3Years, under3Years, under1Year, u
                     ]
                 }
             ]
+        },
+        {
+            'title': "Redlines",
+            layers: [
+                {
+                    'title': "Point",
+                    'layer': redlinePoint,
+                    'legend': [
+                        { 'type':'circle', 'color':'#f50505', 'text':"" }
+                    ]
+                },
+                {
+                    'title': "Line",
+                    'layer': redlineLine,
+                    'legend': [
+                        { 'type':'line', 'color':'#f50505', 'text':"" }
+                    ]
+                }
+            ]
         }
     ]
     return content;
 }
 
 $(document).ready(createMap);
-
-//Does not seem to work, media query not working either. jQuery UI is CRAP
-if ($(window).width() > 799) {
-    $(document).tooltip();
-}

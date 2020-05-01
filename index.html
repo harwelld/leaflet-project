@@ -10,9 +10,6 @@
     
     <!-- Load jQuery and jQuery UI -->
     <script type="text/javascript" src="lib/jquery-3.4.1.js"></script>
-    <link rel="stylesheet" href="lib/jquery-ui-1.12.1/jquery-ui.css">
-    <script type="text/javascript" src="lib/jquery-ui-1.12.1/external/jquery/jquery.js"></script>
-    <script type="text/javascript" src="lib/jquery-ui-1.12.1/jquery-ui.min.js"></script>
 
     <!-- Load Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
@@ -22,18 +19,25 @@
     integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
     crossorigin=""></script>
     
+    <!-- Leaflet Draw -->
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw-src.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw-src.css">
+    
     <!-- Load Leaflet Editable plugins -->
+<!--
     <script src="https://unpkg.com/leaflet.path.drag@0.0.6/src/Path.Drag.js"></script>
-    <script src="https://unpkg.com/leaflet-editable@1.2.0/src/Leaflet.Editable.js"></script>
+    <script type="text/javascript" src="lib/Leaflet.Editable.js"></script>
+-->
+<!--    <script src="https://unpkg.com/leaflet-editable@1.2.0/src/Leaflet.Editable.js"></script>-->
     
     <!-- Load L.Control.AccordianLegend -->
     <script type="text/javascript" src="lib/L.Control.AccordionLegend/dist/L.Control.AccordionLegend.js"></script>
     <link rel="stylesheet" type="text/css" href="lib/L.Control.AccordionLegend/dist/L.Control.AccordionLegend.css">
 
     <!-- Load Esri Leaflet from CDN -->
-    <script src="https://unpkg.com/esri-leaflet@2.3.3/dist/esri-leaflet.js"
-    integrity="sha512-cMQ5e58BDuu1pr9BQ/eGRn6HaR6Olh0ofcHFWe5XesdCITVuSBiBZZbhCijBe5ya238f/zMMRYIMIIg1jxv4sQ=="
-    crossorigin=""></script>    
+    <script src="https://unpkg.com/esri-leaflet@2.4.0/dist/esri-leaflet.js"
+    integrity="sha512-kq0i5Xvdq0ii3v+eRLDpa++uaYPlTuFaOYrfQ0Zdjmms/laOwIvLMAxh7cj1eTqqGG47ssAcTY4hjkWydGt6Eg=="
+    crossorigin=""></script>
 
     <!-- Load Mapbox GL -->
     <link rel="stylesheet" href="https://unpkg.com/mapbox-gl/dist/mapbox-gl.css"/>
@@ -50,7 +54,9 @@
 
 <!-- Map Container -->
 <div id="map">
+    
     <img id="street-view" class="w3-button w3-round leaflet-bar button-image custom-control" src="img/street-view.png" title="Open Google Street View">
+    
     <select id="basemap-selector" class="leaflet-bar custom-control" title="Switch Basemap">
         <option value="OpenStreetMap">OpenStreetMap</option>
         <option value="Newspaper">Newspaper</option>

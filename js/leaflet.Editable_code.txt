@@ -1,0 +1,48 @@
+    // Create generic edit control and add point, line, polygon controls
+    L.EditControl = L.Control.extend({
+        options: { position: 'bottomleft', callback: null, kind: '', html: '' },
+        onAdd: function(map) {
+            var container = L.DomUtil.create('div', 'leaflet-control leaflet-bar');
+            var link = L.DomUtil.create('a', 'edit-control', container);
+            link.href = '#';
+            link.title = 'Create New ' + this.options.kind;
+            link.innerHTML = this.options.html;
+            L.DomEvent
+                .on(link, 'click', L.DomEvent.stop)
+                .on(link, 'click', function() {
+                    window.LAYER = this.options.callback.call(map.editTools);
+                }, this);
+            return container;
+        }
+    });
+     
+    L.NewPointControl = L.EditControl.extend({
+        options: { position: 'bottomleft', callback: map.editTools.startMarker, kind: 'Point', html: '●' }
+    });
+    L.NewLineControl = L.EditControl.extend({
+        options: { position: 'bottomleft', callback: map.editTools.startPolyline, kind: 'Line', html: '▬' }
+    });
+    L.NewPolyControl = L.EditControl.extend({
+        options: { position: 'bottomleft', callback: map.editTools.startPolygon, kind: 'Polygon', html: '▰' }
+    });
+    
+    map.addControl(new L.NewPolyControl());
+    map.addControl(new L.NewLineControl());
+    map.addControl(new L.NewPointControl());
+	
+	
+	    map.on('editable:drawing:commit', function (e) {
+        console.log(e.layer); });
+//      wildfireDistricts.addFeature(e.layer.toGeoJSON(), function (error, response) {
+//        if (error || !response.success) {
+//          console.log(error, response);
+//        }
+//
+//        // now that the L.esri.featureLayer instance will manage this new feature,
+//        // remove any temporary features from the map that were created by the Editable plugin
+//        map.editTools.featuresLayer.clearLayers();
+//      });
+//
+//      // disable editing
+//      e.layer.toggleEdit();
+//    });
