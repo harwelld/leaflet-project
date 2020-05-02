@@ -1,10 +1,8 @@
 /* Scripts - GEOG 575 - project - Dylan Harwell */
 
-// Global vars to track different tool states
+// GLobal tracking vars
 var streetViewActive = false;
-var currentlyEditing;
-var currentlyDeleting = false;
-var disableEditing = false;
+var pointsLoaded = false;
 
 // Create Leaflet map with ESRI vector tile basemap and basemap selector
 function createMap() {
@@ -125,25 +123,27 @@ function createMap() {
     });
     map.addControl(drawControl);
     
-    // When the map is clicked, stop editing
-    map.on('click', function (e) {
-        stopEditing();
-    });
-    
-    // Set draw listener on map
-    map.on(L.Draw.Event.CREATED, function(e) {
+    // Set draw listener on map, call post feature handler
+    map.on(L.Draw.Event.CREATED, function(e, feature) {
         var type = e.layerType;
         var layer = e.layer;
-        console.log(layer);
         if (type === 'marker') {
             postNewFeature(layer, redlinePoint);
         } else if (type === 'polyline') {
             postNewFeature(layer, redlineLine);
         }
-        map.addLayer(layer);
-        layer.openPopup();
+        //layer.addTo(editLayers);
+        layer.addTo(map).openPopup();
+        console.log(editLayers);
     });
     
+    redlinePoint.on('load', function() {
+        editLayers.clearLayers();
+    });
+    
+    redlineLine.on('load', function() {
+        editLayers.clearLayers();
+    });
     
     // Bind popups to pipes and structures layers
     pipes.bindPopup(function(layer) {
@@ -178,38 +178,32 @@ function createMap() {
     // Turn custom controls into Leaflet controls
     htmlControlToLeafletControl(map, 'topleft', 'basemap-selector');
     htmlControlToLeafletControl(map, 'topleft', 'street-view');
-
-    // Edit state functions
-    function startEditing(layer) {
-        document.getElementById('PEDDISTRIC').value = layer.feature.properties.PEDDISTRIC;
-        // read only
-        document.getElementById('TRANPLANID').value = layer.feature.properties.TRANPLANID;
-        if (!disableEditing) {
-          layer.editing.enable();
-          currentlyEditing = layer;
-        }
-    }
-
-    function stopEditing() {
-        if (currentlyEditing) {
-            handleEdit(currentlyEditing);
-            currentlyEditing.editing.disable();
-        }
-        currentlyEditing = undefined;
-    }
-    
 }
 // End of createMap()
 
-// Post new point or line feature to feature services
+// Post new point or line feature to feature services - need to initialize json with properties
+// For some reason listener on standard L.Popup not working, needed custom div element
 function postNewFeature(layer, redlineLayer) {
-    redlineLayer.addFeature(layer.toGeoJSON());
+    var myPopup = L.DomUtil.create('div', 'popup-create');
+    var marker = layer.bindPopup(myPopup);
+    myPopup.innerHTML = newRedlinePopup();
+    $('#button-submit', myPopup).on('click', function() {
+        console.log(layer);
+        var feature = layer.feature = layer.feature || {};
+        feature.type = "Feature";
+        feature.properties = feature.properties || {};
+        feature.properties["name"] = L.DomUtil.get('input-name').value;
+        feature.properties["date"] = L.DomUtil.get('input-date').value;
+        feature.properties["comments"] = L.DomUtil.get('input-comment').value;
+        redlineLayer.addFeature(layer.toGeoJSON());
+        layer.closePopup();
+    });
 }
 
-// Custom popup form edit handler for attribute display and post back to feature service
+// Custom popup form EDIT handler for attribute display and post back to feature service
 function attributeEditPopup(feature, layer, redlineLayer) {
     var marker = layer.bindPopup(function(layer) {
-        return L.Util.template(redlinePopupTemplate, layer.feature.properties);
+        return L.Util.template(existingRedlinePopup(), layer.feature.properties);
     });
     marker.on('click', function(e) {
         var layer = this.feature;
@@ -250,7 +244,6 @@ $('#street-view').on('click', function() {
 });
 
 function googleStreet(e) {
-    console.log('Lat, Lon : ' + e.latlng.lat + ', ' + e.latlng.lng);
     var url = 'https://maps.google.com/maps?q=&layer=c&cbll=' + e.latlng.lat + ',' + e.latlng.lng
     window.open(url);
     map.css('cursor', 'pointer');
@@ -369,28 +362,44 @@ function pipePopup(insDate) {
 }
 
 // Format redline popup form
-function redlinePopup() {
-    return '<form id="popup-form">\
-                <label for="input-date">Date:</label><br \>\
-                <input id="input-date" type="text" /><br \>\
-                <label for="input-comment">Comments:</label><br \>\
-                <input id="input-comment" type="text" /><br \><br \>\
-                <button id="button-submit" type="button">Submit</button>\
-            </form>';
+function newRedlinePopup() {
+    var newRedlinePopupTemplate =
+        '<form id="popup-form" class="w3-container">\
+            <h4>Create New Feature</h4>\
+            <label><b>Name</b></label>\
+            <input id="input-name" class="w3-input w3-border" type="text">\
+            <p>\
+            <label><b>Date</b></label>\
+            <input id="input-date" class="w3-input w3-border" type="text"></p>\
+            <p>\
+            <label><b>Comments</b></label>\
+            <input id="input-comment" class="w3-input w3-border" type="text"></p>\
+            <p>\
+            <button id="button-submit" class="w3-btn w3-light-grey w3-round w3-margin-top" type="button">Save</button></p>\
+        </form>'
+    return newRedlinePopupTemplate;
 }
 
-redlinePopupTemplate = '<form id="popup-form">\
-                        <label for="input-name">Name:</label><br \>\
-                        <input id="input-name" type="text" value="{name}"/><br \>\
-                        <label for="input-date">Date:</label><br \>\
-                        <input id="input-date" type="text" value="{date}"/><br \>\
-                        <label for="input-comment">Comments:</label><br \>\
-                        <input id="input-comment" type="text" value="{comments}"/><br \><br \>\
-                        <button id="button-submit" type="button">Submit</button>\
-                        </form>'
+function existingRedlinePopup() {
+    var existingRedlinePopupTemplate =
+        '<form id="popup-form" class="w3-container">\
+            <h4>Edit Existing Feature</h4>\
+            <label><b>Name</b></label>\
+            <input id="input-name" class="w3-input w3-border" type="text" value="{name}">\
+            <p>\
+            <label><b>Date</b></label>\
+            <input id="input-date" class="w3-input w3-border" type="text" value="{date}"></p>\
+            <p>\
+            <label><b>Comments</b></label>\
+            <input id="input-comment" class="w3-input w3-border" type="text" value="{comments}"></p>\
+            <p>\
+            <button id="button-submit" class="w3-btn w3-light-grey w3-round w3-margin-top" type="button">Save</button></p>\
+        </form>'
+    return existingRedlinePopupTemplate;
+}
 
 // Html element to custom Leaflet control
-function htmlControlToLeafletControl(map, position, element) {
+function htmlControlToLeafletControl(map, position, element, action) {
     var NewControl = L.Control.extend({
         options: {
             position: position
