@@ -6,10 +6,9 @@ var pointsLoaded = false;
 
 // Create Leaflet map with ESRI vector tile basemap and basemap selector
 function createMap() {
-    var map = L.map('map', {
-        editable: true,
-        doubleClickZoom: false
-    }).setView([39.0665, -108.560], 15);
+    var map = L.map('map', { editable: true, doubleClickZoom: false }).setView([39.0665, -108.560], 15);
+    
+    // Add scale bar
     L.control.scale({ metric: false, position: 'bottomright' }).addTo(map);
     
     // Custom attribution to map credits section

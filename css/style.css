@@ -11,6 +11,10 @@ html, body, #map {
     width: 100%;
 }
 
+#map {
+    position: absolute;
+}
+
 #basemap-selector {
     top: -125px;
     left: 35px;
