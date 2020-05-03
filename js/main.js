@@ -12,13 +12,11 @@ function createMap() {
     }).setView([39.0665, -108.560], 15);
     L.control.scale({ metric: false, position: 'bottomright' }).addTo(map);
     
-    // Capitalize zoom tooltips, come on leaflet
-    $('.leaflet-control-zoom-in').prop('title', 'Zoom In');
-    $('.leaflet-control-zoom-out').prop('title', 'Zoom Out');
-    
     // Custom attribution to map credits section
-    map.attributionControl.addAttribution('<a href="https://esri.github.io/esri-leaflet/" target="_blank">Esri Leaflet</a>');
-    map.attributionControl.addAttribution('<a href="https://www.w3schools.com/w3css/default.asp" target="_blank">W3 CSS</a>');
+    map.attributionControl.addAttribution('<a href="https://esri.github.io/esri-leaflet/" title="Leaflet plugin for working with ESRI feature layers" target="_blank">Esri Leaflet</a>');
+    map.attributionControl.addAttribution('<a href="http://leaflet.github.io/Leaflet.draw/docs/leaflet-draw-latest.html" title="Leaflet plugin for drawing on maps" target="_blank">Leaflet Draw</a>');
+    map.attributionControl.addAttribution('<a href="https://github.com/GreenInfo-Network/L.Control.AccordionLegend" title="An interactive accordion legend for Leaflet maps" target="_blank">GreenInfo-Network</a>');
+    map.attributionControl.addAttribution('<a href="https://www.w3schools.com/w3css/default.asp" title="CSS Framework" target="_blank">W3 CSS</a>');
     map.attributionControl.addAttribution('Dylan Harwell - UW Madison');
     
     // Add basemap, set dropdown value, create listener and change function
@@ -41,10 +39,7 @@ function createMap() {
     });
     
     // Circlemarker is actually a polygon, default marker icon is dumb
-    var redlinePointIcon = new L.icon({
-        iconUrl: './img/redCircle.png',
-        iconSize: [16, 16]
-    });
+    var redlinePointIcon = new L.icon({ iconUrl: './img/redCircle.png', iconSize: [16, 16] });
 
     // Initialize map layers from hosted feature layers
     // Probably much better way to handle symbology on pipe inspections, but hey its like using ArcMap definition queries
@@ -115,13 +110,9 @@ function createMap() {
             circle: false,
             rectangle: false,
             polyline: {shapeOptions: {color: '#f50505', opacity: 1, weight: 3}},
-            marker: { icon: new L.icon({
-                iconUrl: './img/redCircle.png',
-                iconSize: [16, 16]
-            })}
+            marker: { icon: redlinePointIcon }
         }
-    });
-    map.addControl(drawControl);
+    }).addTo(map);
     
     // Set draw listener on map, call post feature handler
     map.on(L.Draw.Event.CREATED, function(e, feature) {
@@ -132,15 +123,13 @@ function createMap() {
         } else if (type === 'polyline') {
             postNewFeature(layer, redlineLine);
         }
-        //layer.addTo(editLayers);
         layer.addTo(map).openPopup();
-        console.log(editLayers);
     });
     
+    // When new features posted to feature service, clear L.Draw layergroup
     redlinePoint.on('load', function() {
         editLayers.clearLayers();
     });
-    
     redlineLine.on('load', function() {
         editLayers.clearLayers();
     });
@@ -165,17 +154,18 @@ function createMap() {
     legend.toggleLayer('Line', 'on');
     
     // Tinker with accordion legend classes for my use case (could have modified source, but hey jQuery)
-    $('.leaflet-control-accordionlegend-button').prop('title', 'Toggle Layers and View Legend')
+    $('.leaflet-control-accordionlegend-button').prop('title', 'Toggle layers and view legend items')
     $('.leaflet-control-accordionlegend-button').addClass('w3-button');
     $('.accordionlegend-section-title').addClass('w3-button w3-round');
     $('.accordionlegend-slider').hide();
     $('.accordionlegend-section').children().eq(1).children().eq(1).css('margin-bottom', '0em');
     for (var i=2; i < 8; i++) {
         $('.accordionlegend-section').children().eq(i).children().eq(1).remove();
+        if (i==6) { $('.accordionlegend-section').children().eq(6).children().children().eq(2).css('margin-left', '0.43em'); }
         if (i==7) { $('.accordionlegend-section').children().eq(i).css('padding-bottom', '0.7em'); }
     }
 
-    // Turn custom controls into Leaflet controls
+    // Turn custom html controls into Leaflet controls
     htmlControlToLeafletControl(map, 'topleft', 'basemap-selector');
     htmlControlToLeafletControl(map, 'topleft', 'street-view');
 }
@@ -190,11 +180,11 @@ function postNewFeature(layer, redlineLayer) {
     $('#button-submit', myPopup).on('click', function() {
         console.log(layer);
         var feature = layer.feature = layer.feature || {};
-        feature.type = "Feature";
+        feature.type = 'Feature';
         feature.properties = feature.properties || {};
-        feature.properties["name"] = L.DomUtil.get('input-name').value;
-        feature.properties["date"] = L.DomUtil.get('input-date').value;
-        feature.properties["comments"] = L.DomUtil.get('input-comment').value;
+        feature.properties['name'] = L.DomUtil.get('input-name').value;
+        feature.properties['date'] = L.DomUtil.get('input-date').value;
+        feature.properties['comments'] = L.DomUtil.get('input-comment').value;
         redlineLayer.addFeature(layer.toGeoJSON());
         layer.closePopup();
     });
@@ -231,7 +221,7 @@ function attributeEditPopup(feature, layer, redlineLayer) {
     });
 }
 
-// Set up cursor toggle and Google Street View tool
+// Set up cursor toggle for Google Street View tool
 var map = $('#map');
 $('#street-view').on('click', function() {
     if (map.css('cursor') == 'crosshair') {
@@ -243,6 +233,7 @@ $('#street-view').on('click', function() {
     }
 });
 
+// Open Google Street View in new tab at clicked location
 function googleStreet(e) {
     var url = 'https://maps.google.com/maps?q=&layer=c&cbll=' + e.latlng.lat + ',' + e.latlng.lng
     window.open(url);
@@ -321,18 +312,9 @@ function pipeInspection1MonthSymbology(feature) {
 // Structure symbology - unique categories with picture symbols
 function structureIcons(feature) {
     var icon;
-    var drainIcon = L.icon({
-        iconUrl: './img/drain.png',
-        iconSize: [18, 18]
-    });
-    var mhIcon = L.icon({
-        iconUrl: './img/manhole.png',
-        iconSize: [18, 18]
-    });
-    var disIcon = L.icon({
-        iconUrl: './img/discharge.png',
-        iconSize: [18, 18]
-    });
+    var drainIcon = L.icon({ iconUrl: './img/drain.png', iconSize: [18, 18] });
+    var mhIcon = L.icon({ iconUrl: './img/manhole.png', iconSize: [18, 18] });
+    var disIcon = L.icon({ iconUrl: './img/discharge.png', iconSize: [18, 18] });
     if (feature.properties.SNG_TYPE_C == 'Storm Manhole') icon = mhIcon;
     else if (feature.properties.SNG_TYPE_C == 'Catch Basin') icon = drainIcon;
     else if (feature.properties.SNG_TYPE_C == 'End of Pipe') icon = disIcon;
@@ -361,7 +343,7 @@ function pipePopup(insDate) {
             Inspection Date: ' + insDate + '</p>';
 }
 
-// Format redline popup form
+// Format new redline popup form
 function newRedlinePopup() {
     var newRedlinePopupTemplate =
         '<form id="popup-form" class="w3-container">\
@@ -380,6 +362,7 @@ function newRedlinePopup() {
     return newRedlinePopupTemplate;
 }
 
+// Format existing redline popup form
 function existingRedlinePopup() {
     var existingRedlinePopupTemplate =
         '<form id="popup-form" class="w3-container">\
@@ -425,7 +408,7 @@ $('.custom-control, .legend-control-container').on('mousedown dblclick click', f
    L.DomEvent.stopPropagation(e); 
 });
 
-// Build legend object here to keep it out of createMap
+// Build legend object for accordion legend plugin
 function legendContent(pipes, structures, over3Years, under3Years, under1Year, under1Month, redlinePoint, redlineLine) {
     var content = 
     [

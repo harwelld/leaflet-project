@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset=utf-8 />
-    <title>leaflet-lab</title>
+    <title>City of GJ - Storm Sewer App</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
 
     <!-- Load w3 CSS -->
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
     
-    <!-- Load jQuery and jQuery UI -->
+    <!-- Load jQuery -->
     <script type="text/javascript" src="lib/jquery-3.4.1.js"></script>
 
     <!-- Load Leaflet -->
@@ -22,13 +22,6 @@
     <!-- Leaflet Draw -->
     <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw-src.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw-src.css">
-    
-    <!-- Load Leaflet Editable plugins -->
-<!--
-    <script src="https://unpkg.com/leaflet.path.drag@0.0.6/src/Path.Drag.js"></script>
-    <script type="text/javascript" src="lib/Leaflet.Editable.js"></script>
--->
-<!--    <script src="https://unpkg.com/leaflet-editable@1.2.0/src/Leaflet.Editable.js"></script>-->
     
     <!-- Load L.Control.AccordianLegend -->
     <script type="text/javascript" src="lib/L.Control.AccordionLegend/dist/L.Control.AccordionLegend.js"></script>
@@ -57,7 +50,7 @@
     
     <img id="street-view" class="w3-button w3-round leaflet-bar button-image custom-control" src="img/street-view.png" title="Open Google Street View">
     
-    <select id="basemap-selector" class="leaflet-bar custom-control" title="Switch Basemap">
+    <select id="basemap-selector" class="leaflet-bar custom-control" title="Switch basemap">
         <option value="OpenStreetMap">OpenStreetMap</option>
         <option value="Newspaper">Newspaper</option>
         <option value="Topographic">Topographic</option>
@@ -78,7 +71,6 @@
             <button id="button-submit" type="button">Submit</button>
         </form>
     </div>
-
 
 <!-- Load main js -->
 <script type="text/javascript" src="js/main.js"></script>

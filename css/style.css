@@ -21,11 +21,14 @@ html, body, #map {
     margin: 0.2em 0;
 }
 
-.leaflet-control-zoom-in:hover, .leaflet-control-zoom-out:hover {
-    background-color: #ccc !important;
+option {
+    background-color: white;
 }
 
-.leaflet-draw-draw-polyline:hover, .leaflet-draw-draw-circlemarker:hover, .leaflet-draw-draw-marker:hover, .leaflet-draw-edit-remove:hover {
+.leaflet-draw-draw-polyline:hover, .leaflet-draw-draw-circlemarker:hover,
+.leaflet-draw-draw-marker:hover, .leaflet-draw-edit-remove:hover,
+.leaflet-control-zoom-in:hover, .leaflet-control-zoom-out:hover,
+#basemap-selector:hover {
     background-color: #ccc !important;
 }
 
@@ -46,41 +49,12 @@ html, body, #map {
     max-width: 30px;
 }
 
-.slider {
-    -webkit-appearance: none;
-    vertical-align: middle;
-    height: 15px;
-    border-radius: 5px;
-    background: #d3d3d3;
-    outline: none;
-    -webkit-transition: .2s;
-    transition: opacity .2s;
-}
-
-.slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 25px;
-    height: 25px;
-    border-radius: 50%;
-    background: black;
-    cursor: pointer;
-}
-
-.slider::-moz-range-thumb {
-    width: 25px;
-    height: 25px;
-    border-radius: 50%;
-    cursor: pointer;
-}
-
 .leaflet-control-accordionlegend-button {
     display: block !important;
 }
 
 .accordionlegend-section {
     padding-top: 0.2em;
-    
     margin-right: 1em;
     margin-left: 2.3em !important
 }
